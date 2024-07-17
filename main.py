@@ -5,7 +5,7 @@ class ExpenseTrackerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Expense Tracker")
-        self.root.attributes('-fullscreen', True)
+        self.root.state('zoomed')
 
         style = ttk.Style()
         style.configure('TLabel', font=('Arial', 14))
@@ -50,8 +50,26 @@ class ExpenseTrackerApp:
         self.button_delete = ttk.Button(self.buttons_frame, text="Delete Expense", command=self.delete_expense)
         self.button_delete.pack(side=tk.LEFT, padx=10)
 
+        self.summary_frame = ttk.Frame(self.main_frame)
+        self.summary_frame.grid(row=3, column=0, columnspan=3, pady=20)
+
+        self.label_total = ttk.Label(self.summary_frame, text="Total Expenses: $0")
+        self.label_total.pack()
+
+        self.search_frame = ttk.Frame(self.main_frame)
+        self.search_frame.grid(row=4, column=0, columnspan=3, pady=20)
+
+        self.label_search = ttk.Label(self.search_frame, text="Search by Category:")
+        self.label_search.grid(row=0, column=0, padx=10, pady=10, sticky=tk.E)
+        self.entry_search = ttk.Entry(self.search_frame)
+        self.entry_search.grid(row=0, column=1, padx=10, pady=10, sticky=tk.W)
+        self.button_search = ttk.Button(self.search_frame, text="Search", command=self.search_expenses)
+        self.button_search.grid(row=0, column=2, padx=10, pady=10, sticky=tk.W)
+        self.button_reset = ttk.Button(self.search_frame, text="Reset", command=self.reset_search)
+        self.button_reset.grid(row=0, column=3, padx=10, pady=10, sticky=tk.W)
+
         self.expenses_frame = ttk.Frame(self.main_frame)
-        self.expenses_frame.grid(row=3, column=0, columnspan=3, pady=20)
+        self.expenses_frame.grid(row=5, column=0, columnspan=3, pady=20)
 
         self.label_expenses = ttk.Label(self.expenses_frame, text="Expenses:")
         self.label_expenses.pack()
@@ -83,6 +101,7 @@ class ExpenseTrackerApp:
             expense = {"amount": amount, "category": category, "date": date}
             self.expenses.append(expense)
             self.update_expenses_display()
+            self.update_total_expenses()
             self.clear_input_fields()
             messagebox.showinfo("Expense Added", f"Amount: {amount}, Category: {category}, Date: {date}")
         else:
@@ -92,6 +111,10 @@ class ExpenseTrackerApp:
         self.expenses_listbox.delete(0, tk.END)
         for idx, expense in enumerate(self.expenses, start=1):
             self.expenses_listbox.insert(tk.END, f"{idx}. Amount: {expense['amount']}, Category: {expense['category']}, Date: {expense['date']}")
+
+    def update_total_expenses(self):
+        total = sum(float(expense['amount']) for expense in self.expenses)
+        self.label_total.config(text=f"Total Expenses: ${total:.2f}")
 
     def clear_input_fields(self):
         self.entry_amount.delete(0, tk.END)
@@ -120,6 +143,7 @@ class ExpenseTrackerApp:
                     'date': self.entry_date.get()
                 }
                 self.update_expenses_display()
+                self.update_total_expenses()
                 self.clear_input_fields()
                 self.button_add.config(command=self.add_expense)
                 messagebox.showinfo("Expense Updated", "Expense updated successfully.")
@@ -135,9 +159,24 @@ class ExpenseTrackerApp:
             idx = selected_index[0]
             self.expenses.pop(idx)
             self.update_expenses_display()
+            self.update_total_expenses()
             messagebox.showinfo("Expense Deleted", "Expense deleted successfully.")
         else:
             messagebox.showerror("Error", "Select an expense to delete.")
+
+    def search_expenses(self):
+        search_term = self.entry_search.get().lower()
+        if search_term:
+            filtered_expenses = [expense for expense in self.expenses if search_term in expense['category'].lower()]
+            self.expenses_listbox.delete(0, tk.END)
+            for idx, expense in enumerate(filtered_expenses, start=1):
+                self.expenses_listbox.insert(tk.END, f"{idx}. Amount: {expense['amount']}, Category: {expense['category']}, Date: {expense['date']}")
+        else:
+            self.update_expenses_display()
+
+    def reset_search(self):
+        self.entry_search.delete(0, tk.END)
+        self.update_expenses_display()
 
 def main():
     root = tk.Tk()
