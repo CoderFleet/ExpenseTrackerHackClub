@@ -1,8 +1,8 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
-import csv
+from tkinter import ttk, messagebox, filedialog
 import json
 import os
+import csv
 
 class ExpenseTrackerApp:
     def __init__(self, root):
@@ -13,18 +13,23 @@ class ExpenseTrackerApp:
         style = ttk.Style()
         style.configure('TLabel', font=('Arial', 14))
         style.configure('TButton', font=('Arial', 12))
+        style.configure('TFrame', background='#f0f0f0')
+        style.configure('TEntry', font=('Arial', 12))
+        style.configure('TListbox', font=('Arial', 12))
+        style.configure('TMenubutton', font=('Arial', 12))
+        style.configure('TCombobox', font=('Arial', 12))
 
         self.main_frame = ttk.Frame(root)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         self.header_frame = ttk.Frame(self.main_frame)
-        self.header_frame.grid(row=0, column=0, columnspan=3, pady=20)
+        self.header_frame.grid(row=0, column=0, columnspan=4, pady=20)
 
         self.header_label = ttk.Label(self.header_frame, text="Expense Tracker", font=("Arial", 24))
         self.header_label.pack()
 
         self.input_frame = ttk.Frame(self.main_frame)
-        self.input_frame.grid(row=1, column=0, columnspan=3, pady=10)
+        self.input_frame.grid(row=1, column=0, columnspan=4, pady=10)
 
         self.label_amount = ttk.Label(self.input_frame, text="Amount:")
         self.label_amount.grid(row=0, column=0, padx=10, pady=10, sticky=tk.E)
@@ -42,7 +47,7 @@ class ExpenseTrackerApp:
         self.entry_date.grid(row=2, column=1, padx=10, pady=10, sticky=tk.W)
 
         self.buttons_frame = ttk.Frame(self.main_frame)
-        self.buttons_frame.grid(row=2, column=0, columnspan=3, pady=20)
+        self.buttons_frame.grid(row=2, column=0, columnspan=4, pady=20)
 
         self.button_add = ttk.Button(self.buttons_frame, text="Add Expense", command=self.add_expense)
         self.button_add.pack(side=tk.LEFT, padx=10)
@@ -53,15 +58,14 @@ class ExpenseTrackerApp:
         self.button_delete = ttk.Button(self.buttons_frame, text="Delete Expense", command=self.delete_expense)
         self.button_delete.pack(side=tk.LEFT, padx=10)
 
-
         self.summary_frame = ttk.Frame(self.main_frame)
-        self.summary_frame.grid(row=3, column=0, columnspan=3, pady=20)
+        self.summary_frame.grid(row=3, column=0, columnspan=4, pady=20)
 
         self.label_total = ttk.Label(self.summary_frame, text="Total Expenses: $0")
         self.label_total.pack()
 
         self.search_frame = ttk.Frame(self.main_frame)
-        self.search_frame.grid(row=4, column=0, columnspan=3, pady=20)
+        self.search_frame.grid(row=4, column=0, columnspan=4, pady=20)
 
         self.label_search = ttk.Label(self.search_frame, text="Search by Category:")
         self.label_search.grid(row=0, column=0, padx=10, pady=10, sticky=tk.E)
@@ -73,12 +77,12 @@ class ExpenseTrackerApp:
         self.button_reset.grid(row=0, column=3, padx=10, pady=10, sticky=tk.W)
 
         self.expenses_frame = ttk.Frame(self.main_frame)
-        self.expenses_frame.grid(row=5, column=0, columnspan=3, pady=20)
+        self.expenses_frame.grid(row=5, column=0, columnspan=4, pady=20)
 
         self.label_expenses = ttk.Label(self.expenses_frame, text="Expenses:")
         self.label_expenses.pack()
 
-        self.expenses_listbox = tk.Listbox(self.expenses_frame, height=20, width=80)
+        self.expenses_listbox = tk.Listbox(self.expenses_frame, height=20, width=60)
         self.expenses_listbox.pack()
 
         self.expenses = []
@@ -88,9 +92,10 @@ class ExpenseTrackerApp:
 
         self.file_menu = tk.Menu(self.menu, tearoff=0)
         self.menu.add_cascade(label="File", menu=self.file_menu)
-        self.file_menu.add_command(label="Exit", command=self.root.quit)
-
         self.file_menu.add_command(label="Export to CSV", command=self.export_to_csv)
+        self.file_menu.add_command(label="Backup Data", command=self.backup_data)
+        self.file_menu.add_command(label="Restore Data", command=self.restore_data)
+        self.file_menu.add_command(label="Exit", command=self.root.quit)
 
         self.edit_menu = tk.Menu(self.menu, tearoff=0)
         self.menu.add_cascade(label="Edit", menu=self.edit_menu)
@@ -116,14 +121,6 @@ class ExpenseTrackerApp:
         else:
             messagebox.showerror("Error", "Please fill in all fields.")
 
-    def export_to_csv(self):
-        with open("expenses.csv", "w", newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(["Amount", "Category", "Date"])
-            for expense in self.expenses:
-                writer.writerow([expense["amount"], expense["category"], expense["date"]])
-        messagebox.showinfo("Export Successful", "Expenses exported to expenses.csv")
-    
     def update_expenses_display(self):
         self.expenses_listbox.delete(0, tk.END)
         for idx, expense in enumerate(self.expenses, start=1):
@@ -207,6 +204,31 @@ class ExpenseTrackerApp:
                 self.expenses = json.load(file)
             self.update_expenses_display()
             self.update_total_expenses()
+
+    def export_to_csv(self):
+        with open("expenses.csv", "w", newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Amount", "Category", "Date"])
+            for expense in self.expenses:
+                writer.writerow([expense["amount"], expense["category"], expense["date"]])
+        messagebox.showinfo("Export Successful", "Expenses exported to expenses.csv")
+
+    def backup_data(self):
+        backup_file = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        if backup_file:
+            with open(backup_file, "w") as file:
+                json.dump(self.expenses, file)
+            messagebox.showinfo("Backup Successful", f"Backup saved to {backup_file}")
+
+    def restore_data(self):
+        restore_file = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        if restore_file:
+            with open(restore_file, "r") as file:
+                self.expenses = json.load(file)
+            self.update_expenses_display()
+            self.update_total_expenses()
+            self.save_expenses()
+            messagebox.showinfo("Restore Successful", f"Data restored from {restore_file}")
 
 def main():
     root = tk.Tk()
