@@ -1,5 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import csv
+import json
+import os
 
 class ExpenseTrackerApp:
     def __init__(self, root):
@@ -50,6 +53,7 @@ class ExpenseTrackerApp:
         self.button_delete = ttk.Button(self.buttons_frame, text="Delete Expense", command=self.delete_expense)
         self.button_delete.pack(side=tk.LEFT, padx=10)
 
+
         self.summary_frame = ttk.Frame(self.main_frame)
         self.summary_frame.grid(row=3, column=0, columnspan=3, pady=20)
 
@@ -86,11 +90,15 @@ class ExpenseTrackerApp:
         self.menu.add_cascade(label="File", menu=self.file_menu)
         self.file_menu.add_command(label="Exit", command=self.root.quit)
 
+        self.file_menu.add_command(label="Export to CSV", command=self.export_to_csv)
+
         self.edit_menu = tk.Menu(self.menu, tearoff=0)
         self.menu.add_cascade(label="Edit", menu=self.edit_menu)
         self.edit_menu.add_command(label="Add Expense", command=self.add_expense)
         self.edit_menu.add_command(label="Edit Expense", command=self.edit_expense)
         self.edit_menu.add_command(label="Delete Expense", command=self.delete_expense)
+
+        self.load_expenses()
 
     def add_expense(self):
         amount = self.entry_amount.get()
@@ -102,11 +110,20 @@ class ExpenseTrackerApp:
             self.expenses.append(expense)
             self.update_expenses_display()
             self.update_total_expenses()
+            self.save_expenses()
             self.clear_input_fields()
             messagebox.showinfo("Expense Added", f"Amount: {amount}, Category: {category}, Date: {date}")
         else:
             messagebox.showerror("Error", "Please fill in all fields.")
 
+    def export_to_csv(self):
+        with open("expenses.csv", "w", newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Amount", "Category", "Date"])
+            for expense in self.expenses:
+                writer.writerow([expense["amount"], expense["category"], expense["date"]])
+        messagebox.showinfo("Export Successful", "Expenses exported to expenses.csv")
+    
     def update_expenses_display(self):
         self.expenses_listbox.delete(0, tk.END)
         for idx, expense in enumerate(self.expenses, start=1):
@@ -144,6 +161,7 @@ class ExpenseTrackerApp:
                 }
                 self.update_expenses_display()
                 self.update_total_expenses()
+                self.save_expenses()
                 self.clear_input_fields()
                 self.button_add.config(command=self.add_expense)
                 messagebox.showinfo("Expense Updated", "Expense updated successfully.")
@@ -160,6 +178,7 @@ class ExpenseTrackerApp:
             self.expenses.pop(idx)
             self.update_expenses_display()
             self.update_total_expenses()
+            self.save_expenses()
             messagebox.showinfo("Expense Deleted", "Expense deleted successfully.")
         else:
             messagebox.showerror("Error", "Select an expense to delete.")
@@ -177,6 +196,17 @@ class ExpenseTrackerApp:
     def reset_search(self):
         self.entry_search.delete(0, tk.END)
         self.update_expenses_display()
+
+    def save_expenses(self):
+        with open("expenses.json", "w") as file:
+            json.dump(self.expenses, file)
+
+    def load_expenses(self):
+        if os.path.exists("expenses.json"):
+            with open("expenses.json", "r") as file:
+                self.expenses = json.load(file)
+            self.update_expenses_display()
+            self.update_total_expenses()
 
 def main():
     root = tk.Tk()
